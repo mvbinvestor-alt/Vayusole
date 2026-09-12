@@ -87,6 +87,24 @@ to gets in too — for a small closed beta that is usually a fair trade.
 The cookie is HMAC-signed, httpOnly, secure, and expires after 30 days.
 Forged, expired, and label-swapped cookies are all rejected.
 
+## Audio
+
+All sound is synthesised in the browser with the Web Audio API. There are no
+audio files, no samples, and nothing licensed from anyone — so there is no
+copyright or attribution obligation, nothing to host, and no bandwidth cost.
+
+- A low drone (110Hz root, slight detune, fifth beneath, low-passed) whose
+  level follows the breath cycle — swelling on the inhale, settling on the
+  exhale
+- A soft sine tone at each pressure transition: D4 on press, F4 on hold,
+  A4 on release, lightly panned
+- Off by default. The toggle is the user gesture that lets iOS start the
+  audio context.
+
+Deliberately not framed as binaural beats or anything with a claimed
+physiological effect — that would be the first grade-A claim in an app that
+grades nothing above C. It is an audible timing cue, nothing more.
+
 ## Evidence policy
 
 Grades follow: A = strong systematic review, B = moderate clinical trial,

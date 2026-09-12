@@ -12,6 +12,8 @@ import {
   Wind,
   Hand,
   Sparkles,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 
@@ -634,11 +636,154 @@ function mapPointsForStep(stepText, candidatePoints) {
   return hits.length ? hits : candidatePoints;
 }
 
+// ---------------------------------------------------------------------------
+// Ambient audio. Everything here is synthesised in the browser with Web Audio —
+// there are no audio files, no samples, and nothing licensed. A drone swells
+// with the breath ring and a soft tone marks each pressure phase.
+//
+// Deliberately NOT framed as binaural beats or anything with a claimed
+// physiological effect. It's a timing cue you can hear, nothing more.
+// ---------------------------------------------------------------------------
+function useAmbientAudio({ enabled, running, breathPhase, phase }) {
+  const ctxRef = useRef(null);
+  const masterRef = useRef(null);
+  const nodesRef = useRef([]);
+
+  // Build or tear down the graph when the toggle flips.
+  useEffect(() => {
+    if (!enabled) {
+      if (ctxRef.current) {
+        try {
+          masterRef.current?.gain.cancelScheduledValues(ctxRef.current.currentTime);
+          masterRef.current?.gain.linearRampToValueAtTime(0, ctxRef.current.currentTime + 0.3);
+          const ctx = ctxRef.current;
+          const stop = nodesRef.current;
+          setTimeout(() => {
+            stop.forEach((n) => {
+              try {
+                n.stop();
+              } catch {}
+            });
+            ctx.close();
+          }, 400);
+        } catch {}
+        ctxRef.current = null;
+        masterRef.current = null;
+        nodesRef.current = [];
+      }
+      return;
+    }
+
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return; // no Web Audio — fail quiet, the app is unaffected
+    const ctx = new Ctx();
+    ctxRef.current = ctx;
+
+    const master = ctx.createGain();
+    master.gain.value = 0;
+    masterRef.current = master;
+
+    // Warm it up — a low-pass keeps the drone soft rather than buzzy.
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 620;
+    filter.Q.value = 0.6;
+
+    master.connect(filter);
+    filter.connect(ctx.destination);
+
+    // Root, a slight detune for movement, and a fifth underneath.
+    const voices = [
+      { freq: 110, type: "sine", gain: 0.5 },
+      { freq: 110.4, type: "sine", gain: 0.35 },
+      { freq: 164.81, type: "sine", gain: 0.18 },
+      { freq: 55, type: "triangle", gain: 0.22 },
+    ];
+
+    voices.forEach((v) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = v.type;
+      osc.frequency.value = v.freq;
+      g.gain.value = v.gain;
+      osc.connect(g);
+      g.connect(master);
+      osc.start();
+      nodesRef.current.push(osc);
+    });
+
+    return () => {
+      try {
+        nodesRef.current.forEach((n) => {
+          try {
+            n.stop();
+          } catch {}
+        });
+        ctx.close();
+      } catch {}
+      ctxRef.current = null;
+      masterRef.current = null;
+      nodesRef.current = [];
+    };
+  }, [enabled]);
+
+  // Drone follows the breath: swell on the inhale, settle on the exhale.
+  useEffect(() => {
+    const ctx = ctxRef.current;
+    const master = masterRef.current;
+    if (!ctx || !master) return;
+
+    // iOS starts contexts suspended until a gesture; the toggle is that gesture.
+    if (ctx.state === "suspended") ctx.resume().catch(() => {});
+
+    const now = ctx.currentTime;
+    const target = !running ? 0.02 : breathPhase === "in" ? 0.075 : breathPhase === "full" ? 0.075 : 0.03;
+    const ramp = breathPhase === "full" ? 1.8 : 3.8;
+
+    master.gain.cancelScheduledValues(now);
+    master.gain.setValueAtTime(master.gain.value, now);
+    master.gain.linearRampToValueAtTime(target, now + ramp);
+  }, [breathPhase, running, enabled]);
+
+  // A soft tone at each pressure transition.
+  useEffect(() => {
+    const ctx = ctxRef.current;
+    if (!ctx || !running || phase === "rest") return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+
+    // press lands low and grounding, release lifts and lets go
+    const freq = phase === "press" ? 293.66 : phase === "hold" ? 349.23 : 440;
+    osc.type = "sine";
+    osc.frequency.value = freq;
+
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(0.06, now + 0.06);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 1.4);
+
+    osc.connect(g);
+    if (pan) {
+      pan.pan.value = phase === "release" ? 0.18 : -0.12;
+      g.connect(pan);
+      pan.connect(ctx.destination);
+    } else {
+      g.connect(ctx.destination);
+    }
+
+    osc.start(now);
+    osc.stop(now + 1.5);
+  }, [phase, running]);
+}
+
 function ProtocolView({ problem, onBack, onComplete }) {
   const [seconds, setSeconds] = useState(problem.duration);
   const [running, setRunning] = useState(false);
   const [breathOn, setBreathOn] = useState(true);
   const [openStep, setOpenStep] = useState(null);
+  const [soundOn, setSoundOn] = useState(false);
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -675,6 +820,8 @@ function ProtocolView({ problem, onBack, onComplete }) {
   const bPos = elapsed % BREATH_CYCLE;
   const breathPhase = bPos < 4 ? "in" : bPos < 6 ? "full" : "out";
   const breathScale = breathPhase === "in" ? 1 : breathPhase === "full" ? 1 : 0.45;
+
+  useAmbientAudio({ enabled: soundOn, running, breathPhase, phase });
 
   return (
     <div className="px-5 pt-6 pb-10">
@@ -836,6 +983,48 @@ function ProtocolView({ problem, onBack, onComplete }) {
           </div>
         )}
       </div>
+
+      {/* ambient sound */}
+      <button
+        onClick={() => setSoundOn((s) => !s)}
+        className="w-full rounded-2xl p-4 mb-5 flex items-center justify-between transition-transform active:scale-95"
+        style={{
+          background: soundOn ? "rgba(200,118,59,0.15)" : "rgba(241,231,211,0.06)",
+          border: `1px solid ${soundOn ? "rgba(200,118,59,0.35)" : "rgba(241,231,211,0.12)"}`,
+        }}
+      >
+        <div className="flex items-center gap-2.5 text-left">
+          {soundOn ? (
+            <Volume2 size={16} color="#C8763B" className="flex-shrink-0" />
+          ) : (
+            <VolumeX size={16} color="rgba(241,231,211,0.4)" className="flex-shrink-0" />
+          )}
+          <div>
+            <p
+              className="text-sm"
+              style={{ color: "#F1E7D3", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              Ambient sound
+            </p>
+            <p
+              className="text-[11px]"
+              style={{ color: "rgba(241,231,211,0.45)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              A tone that follows the breath and marks each press
+            </p>
+          </div>
+        </div>
+        <span
+          className="text-[10px] px-2.5 py-1 rounded-full flex-shrink-0"
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            background: soundOn ? "rgba(200,118,59,0.4)" : "rgba(241,231,211,0.08)",
+            color: soundOn ? "#F1E7D3" : "rgba(241,231,211,0.5)",
+          }}
+        >
+          {soundOn ? "ON" : "OFF"}
+        </span>
+      </button>
 
       {/* steps */}
       <h3 className="text-sm uppercase tracking-wide mb-3" style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}>
