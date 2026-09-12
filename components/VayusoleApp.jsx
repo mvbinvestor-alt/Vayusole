@@ -1770,6 +1770,28 @@ function ConsentGate({ onAccept, onCancel }) {
   );
 }
 
+function Footer() {
+  return (
+    <div
+      className="px-5 py-6 text-center"
+      style={{ borderTop: "1px solid rgba(241,231,211,0.08)" }}
+    >
+      <p
+        className="text-[11px] mb-1"
+        style={{ fontFamily: "'IBM Plex Mono', monospace", color: "rgba(241,231,211,0.45)" }}
+      >
+        © {new Date().getFullYear()} Balaji Veeramani
+      </p>
+      <p
+        className="text-[10px] leading-relaxed"
+        style={{ fontFamily: "'IBM Plex Sans', sans-serif", color: "rgba(241,231,211,0.3)" }}
+      >
+        Vayusole · All rights reserved · Educational content only, not medical advice
+      </p>
+    </div>
+  );
+}
+
 function NavTabs({ tab, setTab }) {
   const tabs = [
     { id: "today", label: "Today" },
@@ -1849,6 +1871,7 @@ export default function VayusoleApp() {
             {tab === "history" && <HistoryView />}
           </>
         )}
+        <Footer />
       </div>
     </div>
   );
