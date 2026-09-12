@@ -1572,16 +1572,31 @@ function AboutView() {
           no underlying condition. For most people it is low risk and costs nothing to
           try — so if you want to try it, here is a careful way to do that.
         </p>
-        <p
-          className="text-xs mt-4 pt-4"
-          style={{
-            borderTop: "1px solid rgba(241,231,211,0.12)",
-            color: "rgba(241,231,211,0.5)",
-            fontFamily: "'IBM Plex Mono', monospace",
-          }}
+        <div
+          className="flex items-center justify-between gap-3 mt-4 pt-4"
+          style={{ borderTop: "1px solid rgba(241,231,211,0.12)" }}
         >
-          Balaji Veeramani · builder
-        </p>
+          <p
+            className="text-xs"
+            style={{ color: "rgba(241,231,211,0.5)", fontFamily: "'IBM Plex Mono', monospace" }}
+          >
+            Balaji Veeramani · builder
+          </p>
+          <a
+            href="https://www.linkedin.com/in/balaji-veeramani-b235aa15"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] px-3 py-1.5 rounded-full flex-shrink-0"
+            style={{
+              background: "rgba(241,231,211,0.08)",
+              border: "1px solid rgba(241,231,211,0.18)",
+              color: "rgba(241,231,211,0.75)",
+              fontFamily: "'IBM Plex Sans', sans-serif",
+            }}
+          >
+            LinkedIn ↗
+          </a>
+        </div>
       </div>
 
       {/* how it's built */}
