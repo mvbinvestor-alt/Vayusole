@@ -601,10 +601,44 @@ function ProblemPicker({ onSelect, sessions }) {
   );
 }
 
+// Keywords that identify which reflex point a written step refers to.
+// Derived from the step text itself so the protocol data stays untouched.
+const STEP_KEYWORDS = {
+  solarPlexus: ["solar plexus"],
+  head: ["head point", "head /", "head reflex"],
+  sinus: ["sinus"],
+  pituitary: ["pituitary"],
+  lung: ["lung"],
+  heart: ["heart"],
+  spine: ["spine"],
+  lowerBack: ["lower back"],
+  sciatic: ["sciatic"],
+  pelvic: ["pelvic"],
+  lymphatic: ["lymphatic"],
+  diaphragm: ["diaphragm"],
+  kidney: ["kidney"],
+  intestine: ["intestine"],
+};
+
+function pointsForStep(stepText, candidatePoints) {
+  const lower = stepText.toLowerCase();
+  return candidatePoints.filter((id) =>
+    (STEP_KEYWORDS[id] || []).some((kw) => lower.includes(kw))
+  );
+}
+
+// Whole-foot steps (effleurage, rolling, warming) name no single point.
+// Those keep the full protocol lit rather than blanking the map.
+function mapPointsForStep(stepText, candidatePoints) {
+  const hits = pointsForStep(stepText, candidatePoints);
+  return hits.length ? hits : candidatePoints;
+}
+
 function ProtocolView({ problem, onBack, onComplete }) {
   const [seconds, setSeconds] = useState(problem.duration);
   const [running, setRunning] = useState(false);
   const [breathOn, setBreathOn] = useState(true);
+  const [openStep, setOpenStep] = useState(null);
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -662,7 +696,15 @@ function ProtocolView({ problem, onBack, onComplete }) {
         <GradeBadge grade={problem.grade} />
       </div>
 
-      <FootMap activeIds={problem.points} pulseId={pulseId} phase={phase} />
+      <FootMap
+        activeIds={
+          openStep !== null
+            ? mapPointsForStep(problem.steps[openStep], problem.points)
+            : problem.points
+        }
+        pulseId={pulseId}
+        phase={phase}
+      />
 
       {/* live pressure caption — follows the ring on the map */}
       <div className="h-6 flex items-center justify-center mt-1">
@@ -799,19 +841,66 @@ function ProtocolView({ problem, onBack, onComplete }) {
       <h3 className="text-sm uppercase tracking-wide mb-3" style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}>
         Guided steps
       </h3>
-      <ol className="space-y-3 mb-6">
-        {problem.steps.map((s, i) => (
-          <li key={i} className="flex gap-3 text-sm" style={{ color: "#F1E7D3", fontFamily: "'IBM Plex Sans', sans-serif" }}>
-            <span
-              className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs"
-              style={{ background: "rgba(241,231,211,0.12)", fontFamily: "'IBM Plex Mono', monospace" }}
-            >
-              {i + 1}
-            </span>
-            <span className="pt-0.5 leading-relaxed">{s}</span>
-          </li>
-        ))}
+      <ol className="space-y-2 mb-2">
+        {problem.steps.map((s, i) => {
+          const stepPoints = pointsForStep(s, problem.points);
+          const isOpen = openStep === i;
+          return (
+            <li key={i}>
+              <button
+                onClick={() => setOpenStep(isOpen ? null : i)}
+                className="flex gap-3 text-sm text-left w-full rounded-xl p-2 -m-2 transition-colors"
+                style={{
+                  color: "#F1E7D3",
+                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  background: isOpen ? "rgba(200,118,59,0.12)" : "transparent",
+                }}
+              >
+                <span
+                  className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs"
+                  style={{
+                    background: isOpen ? "#C8763B" : "rgba(241,231,211,0.12)",
+                    color: isOpen ? "#10262B" : "#F1E7D3",
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    transition: "all .25s ease",
+                  }}
+                >
+                  {i + 1}
+                </span>
+                <span className="pt-0.5 leading-relaxed flex-1">
+                  {s}
+                  {stepPoints.length > 0 && (
+                    <span className="flex flex-wrap gap-1.5 mt-2">
+                      {stepPoints.map((id) => (
+                        <span
+                          key={id}
+                          className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full"
+                          style={{
+                            background: isOpen
+                              ? ZONES[POINTS[id].zone]
+                              : "rgba(241,231,211,0.08)",
+                            color: isOpen ? "#10262B" : "rgba(241,231,211,0.6)",
+                            fontFamily: "'IBM Plex Mono', monospace",
+                            transition: "all .25s ease",
+                          }}
+                        >
+                          {POINTS[id].code}
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                </span>
+              </button>
+            </li>
+          );
+        })}
       </ol>
+      <p
+        className="text-[11px] mb-6 pl-9"
+        style={{ color: "rgba(241,231,211,0.35)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+      >
+        Tap a step to light its points on the map above.
+      </p>
 
       {/* remedy card */}
       <div className="rounded-2xl p-4 mb-4" style={{ background: "#F1E7D3" }}>
@@ -909,6 +998,165 @@ const TOOLS = [
   },
 ];
 
+// Schematic motion diagrams. These show the movement of the hand, not anatomy —
+// no anatomical accuracy is claimed or needed for a motion cue.
+function TechniqueDiagram({ name }) {
+  const ink = "rgba(241,231,211,0.35)";
+  const surface = "rgba(241,231,211,0.10)";
+  const ember = "#C8763B";
+  const jade = "#4E8B78";
+
+  // shared: a slab standing in for a patch of sole
+  const Slab = ({ y = 78 }) => (
+    <path
+      d={`M12 ${y} Q100 ${y - 16} 188 ${y}`}
+      fill="none"
+      stroke={ink}
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  );
+
+  const diagrams = {
+    "Thumb Walking": (
+      <>
+        <Slab />
+        <rect x="8" y="62" width="184" height="30" rx="14" fill={surface} />
+        {/* caterpillar steps */}
+        {[40, 72, 104, 136].map((x, i) => (
+          <g key={x}>
+            <circle cx={x} cy={74 - i * 1.5} r="5" fill={ember} opacity={0.25 + i * 0.22} />
+            <path
+              d={`M${x + 8} ${70 - i * 1.5} Q${x + 16} ${58 - i * 1.5} ${x + 24} ${70 - i * 1.5}`}
+              fill="none"
+              stroke={ember}
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              opacity="0.55"
+            />
+          </g>
+        ))}
+        {/* thumb */}
+        <path
+          d="M150 40 q16 4 18 20 q2 16 -12 20 q-14 4 -20 -8 q-6 -14 4 -24 q5 -6 10 -8 Z"
+          fill={ember}
+          opacity="0.9"
+        />
+        <path d="M28 100 L172 100" stroke={ember} strokeWidth="1.2" strokeDasharray="3 4" opacity="0.5" />
+        <path d="M166 96 l8 4 -8 4" fill="none" stroke={ember} strokeWidth="1.4" strokeLinecap="round" />
+      </>
+    ),
+    "Finger Walking": (
+      <>
+        <Slab />
+        <rect x="8" y="62" width="184" height="30" rx="14" fill={surface} />
+        {[52, 80, 108].map((x, i) => (
+          <g key={x}>
+            <circle cx={x} cy={74} r="3.6" fill={jade} opacity={0.35 + i * 0.25} />
+            <path
+              d={`M${x + 6} ${70} Q${x + 12} ${60} ${x + 18} ${70}`}
+              fill="none"
+              stroke={jade}
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              opacity="0.5"
+            />
+          </g>
+        ))}
+        {/* index finger */}
+        <path
+          d="M126 34 q10 2 12 16 l2 22 q1 10 -9 12 q-10 2 -12 -8 l-3 -26 q-1 -12 10 -16 Z"
+          fill={jade}
+          opacity="0.9"
+        />
+        <text x="100" y="112" textAnchor="middle" fontSize="9" fill={ink} fontFamily="'IBM Plex Mono', monospace">
+          smaller areas · between toes
+        </text>
+      </>
+    ),
+    "Hook and Backup": (
+      <>
+        <Slab y={84} />
+        <rect x="8" y="68" width="184" height="30" rx="14" fill={surface} />
+        <circle cx="100" cy="80" r="9" fill={ember} opacity="0.25" />
+        <circle cx="100" cy="80" r="4" fill={ember} />
+        {/* press in */}
+        <path d="M100 30 L100 62" stroke={ember} strokeWidth="2" strokeLinecap="round" />
+        <path d="M94 56 l6 8 6 -8" fill="none" stroke={ember} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {/* hook back */}
+        <path
+          d="M100 80 q22 0 26 -20"
+          fill="none"
+          stroke={jade}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray="4 4"
+        />
+        <path d="M120 64 l6 -6 3 8" fill="none" stroke={jade} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <text x="46" y="26" fontSize="9" fill={ember} fontFamily="'IBM Plex Mono', monospace">1 press</text>
+        <text x="132" y="26" fontSize="9" fill={jade} fontFamily="'IBM Plex Mono', monospace">2 hook</text>
+      </>
+    ),
+    "Press and Rotate": (
+      <>
+        <Slab y={86} />
+        <rect x="8" y="70" width="184" height="30" rx="14" fill={surface} />
+        <circle cx="100" cy="82" r="4" fill={ember} />
+        {/* rotation */}
+        <circle cx="100" cy="82" r="18" fill="none" stroke={ember} strokeWidth="1.8" strokeDasharray="5 5" opacity="0.7" />
+        <circle cx="100" cy="82" r="27" fill="none" stroke={ember} strokeWidth="1.2" strokeDasharray="4 6" opacity="0.35" />
+        <path d="M118 76 l6 6 -8 5" fill="none" stroke={ember} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M100 34 L100 60" stroke={ember} strokeWidth="2" strokeLinecap="round" />
+        <path d="M94 54 l6 8 6 -8" fill="none" stroke={ember} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <text x="100" y="116" textAnchor="middle" fontSize="9" fill={ink} fontFamily="'IBM Plex Mono', monospace">
+          either direction · larger areas
+        </text>
+      </>
+    ),
+    "Effleurage (warm-up strokes)": (
+      <>
+        {/* schematic sole */}
+        <path
+          d="M62 18 q-20 4 -18 26 q2 18 -4 34 q-6 20 4 34 q10 14 26 12 q16 -2 22 -18 q6 -18 4 -34 q-2 -20 2 -34 q4 -18 -14 -22 q-14 -4 -22 2 Z"
+          fill={surface}
+          stroke={ink}
+          strokeWidth="1.5"
+        />
+        {/* long sweeps */}
+        {[0, 1, 2].map((i) => (
+          <path
+            key={i}
+            d={`M${70 + i * 6} 106 Q${76 + i * 6} 60 ${70 + i * 6} 26`}
+            fill="none"
+            stroke={ember}
+            strokeWidth="2"
+            strokeLinecap="round"
+            opacity={0.75 - i * 0.2}
+          />
+        ))}
+        <path d="M64 34 l6 -10 6 10" fill="none" stroke={ember} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {/* flat hand */}
+        <rect x="130" y="52" width="46" height="30" rx="12" fill={ember} opacity="0.85" />
+        <rect x="140" y="40" width="30" height="18" rx="8" fill={ember} opacity="0.55" />
+        <text x="153" y="104" textAnchor="middle" fontSize="9" fill={ink} fontFamily="'IBM Plex Mono', monospace">
+          flat of the hand
+        </text>
+        <text x="153" y="116" textAnchor="middle" fontSize="9" fill={ink} fontFamily="'IBM Plex Mono', monospace">
+          heel → toe
+        </text>
+      </>
+    ),
+  };
+
+  if (!diagrams[name]) return null;
+
+  return (
+    <svg viewBox="0 0 200 124" className="w-full" style={{ maxWidth: 260, margin: "0 auto" }}>
+      {diagrams[name]}
+    </svg>
+  );
+}
+
 function TechniquesView() {
   return (
     <div className="px-5 pt-8 pb-10">
@@ -955,6 +1203,12 @@ function TechniquesView() {
             <p className="text-xs leading-relaxed" style={{ color: "#3A342A", fontFamily: "'IBM Plex Sans', sans-serif" }}>
               {t.text}
             </p>
+            <div
+              className="rounded-xl mt-3 py-2"
+              style={{ background: "#10262B" }}
+            >
+              <TechniqueDiagram name={t.name} />
+            </div>
           </div>
         ))}
       </div>
