@@ -62,6 +62,31 @@ it sits outside medical-device territory. That downgrades two items and keeps tw
 - [x] **Evidence grades locked.** Audited: 20 graded items, 12 at C and 8 at D.
       Nothing above C. Re-run the audit if protocols change.
 
+## Beta gate
+
+The whole site can be put behind an access code. Controlled by environment
+variables in Vercel (Settings → Environment Variables), then redeploy.
+
+| Variable | Value | Effect |
+|---|---|---|
+| `BETA_GATE` | `on` | Gate is up. Anything else, or unset, means the site is open. |
+| `BETA_CODES` | `mohan:heel-19,amy:sun-42` | Comma separated. `label:code` or a bare `code`. The label is never shown to users — it exists so you can tell whose code was used. |
+| `BETA_SECRET` | long random string | Signs the session cookie. Changing it logs everyone out. |
+
+**Turning it off:** set `BETA_GATE=off` and redeploy. Nothing else to undo.
+
+**Adding a tester:** append `name:their-code` to `BETA_CODES`, redeploy, send
+them the code. **Revoking one:** remove their entry and redeploy — but note
+that a cookie they already hold stays valid for up to 30 days. To cut everyone
+off immediately, change `BETA_SECRET`.
+
+**One-tap links:** `https://vayusole.vercel.app/?code=heel-19` signs them in
+and strips the code from the URL. Convenient, but anyone they forward the link
+to gets in too — for a small closed beta that is usually a fair trade.
+
+The cookie is HMAC-signed, httpOnly, secure, and expires after 30 days.
+Forged, expired, and label-swapped cookies are all rejected.
+
 ## Evidence policy
 
 Grades follow: A = strong systematic review, B = moderate clinical trial,
