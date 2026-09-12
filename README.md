@@ -33,16 +33,34 @@ npm run dev
 
 ## BEFORE PUBLIC LAUNCH — blocking items
 
-- [ ] **Foot chart is illustrative, not anatomical.** The SVG in
-      `components/VayusoleApp.jsx` is diagrammatic placeholder art. Commission or
-      license a proper chart before anyone outside the test group sees this.
-- [ ] **Protocol review by practitioner.** All 10 protocols need sign-off from a
-      qualified reflexology practitioner for technique accuracy.
-- [ ] **Contraindication review by a medical professional.** Separate from the
-      practitioner review. Diabetes, neuropathy, DVT, and pregnancy warnings need
-      review by someone medically qualified.
-- [ ] **Legal pages.** Disclaimer, privacy policy, terms of use.
-- [ ] **Evidence grades locked.** Nothing above C. Re-verify if protocols change.
+Reviewed against the regulatory position (see `docs/legal-drafts.md`). The app
+makes no treatment claims, takes no measurements, and performs no diagnosis, so
+it sits outside medical-device territory. That downgrades two items and keeps two.
+
+**Still blocking:**
+
+- [ ] **Contraindication review by a medical professional.** This is the actual
+      physical-harm surface — neuropathy, DVT, pregnancy, burn risk in the
+      remedies. Packet ready to send: `docs/clinical-review-packet.md`.
+- [ ] **Legal pages reviewed by counsel.** Drafts ready:
+      `docs/legal-drafts.md`. Indian counsel must specifically clear the Drugs
+      and Magic Remedies (Objectionable Advertisements) Act 1954 question.
+- [ ] **LICENSE file.** Repo has none; terms draft assumes all rights reserved.
+- [ ] **Commercial vs non-commercial decision.** Vercel's Hobby plan permits
+      personal, non-commercial use only. Monetising means moving to Pro.
+
+**Downgraded to recommended:**
+
+- [ ] Anatomical foot chart. The SVG is diagrammatic placeholder art, and the
+      app says so in-product on the Explore tab. Commission a proper chart when
+      budget allows — no longer launch-blocking.
+- [ ] Practitioner sign-off on the 10 protocols. Valuable for credibility, not
+      legally required given no efficacy is claimed.
+
+**Done:**
+
+- [x] **Evidence grades locked.** Audited: 20 graded items, 12 at C and 8 at D.
+      Nothing above C. Re-run the audit if protocols change.
 
 ## Evidence policy
 

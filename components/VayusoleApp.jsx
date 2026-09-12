@@ -1657,6 +1657,35 @@ function AboutView() {
         </ul>
       </div>
 
+      {/* data & privacy */}
+      <h3
+        className="text-sm uppercase tracking-wide mb-3"
+        style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}
+      >
+        Your data
+      </h3>
+      <div
+        className="rounded-2xl p-4 mb-7"
+        style={{ background: "rgba(78,139,120,0.12)", border: "1px solid rgba(78,139,120,0.3)" }}
+      >
+        <p
+          className="text-sm font-medium mb-2"
+          style={{ color: "#F1E7D3", fontFamily: "'IBM Plex Sans', sans-serif" }}
+        >
+          We don't collect any.
+        </p>
+        <p
+          className="text-xs leading-relaxed"
+          style={{ color: "rgba(241,231,211,0.7)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+        >
+          No account, no sign-up, no analytics, no advertising, no tracking
+          cookies. Which protocols you pick and what's bothering you never leaves
+          your device — your session history lives in the browser's memory while the
+          app is open and is gone when you close the tab. If that ever changes,
+          this panel changes with it, before the feature ships.
+        </p>
+      </div>
+
       {/* discretion */}
       <div
         className="rounded-2xl p-4 mb-4"
