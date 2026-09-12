@@ -1500,6 +1500,276 @@ function ProgressView({ sessions }) {
   );
 }
 
+const BUILD_PRINCIPLES = [
+  {
+    head: "Graded, not asserted",
+    body: "Every protocol and remedy carries an evidence letter. Nothing is graded above C, because nothing in the published literature supports more than that. The grade is visible before you start, not buried in a footer.",
+  },
+  {
+    head: "The unflattering studies are included",
+    body: "The Evidence tab lists systematic reviews that found no effect alongside the ones that found a signal — including the 2024 Australian Department of Health review. A source list that only contains good news is marketing.",
+  },
+  {
+    head: "Contraindications come first",
+    body: "Each protocol names who should not do it — neuropathy, recent injury, pregnancy, fever, open wounds. Low risk is not no risk, and the difference is written down.",
+  },
+  {
+    head: "Traditional claims are labelled as traditional",
+    body: "Where a point or remedy rests on long use rather than trial data, it is marked grade D and says so. Age is not evidence.",
+  },
+  {
+    head: "Nothing here diagnoses or treats",
+    body: "The app suggests where to press and for how long. It does not tell you what is wrong with you, and it never asks you to delay care.",
+  },
+];
+
+function AboutView() {
+  return (
+    <div className="px-5 pt-8 pb-10">
+      <p
+        className="text-xs tracking-widest uppercase mb-1"
+        style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}
+      >
+        Why this exists
+      </p>
+      <h1
+        className="text-3xl mb-3 leading-tight"
+        style={{ fontFamily: "'Fraunces', serif", color: "#F1E7D3", fontWeight: 600 }}
+      >
+        Built from experience, checked against research
+      </h1>
+
+      {/* founder story */}
+      <div
+        className="rounded-2xl p-5 mb-7"
+        style={{ background: "rgba(241,231,211,0.06)", border: "1px solid rgba(241,231,211,0.15)" }}
+      >
+        <p
+          className="text-sm leading-relaxed mb-3"
+          style={{ color: "rgba(241,231,211,0.8)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+        >
+          My wife was bedridden for a month. I spent that month anxious and not
+          sleeping, and we started going for foot reflexology. It helped me — my sleep
+          settled, and the anxiety eased. That is the whole of my personal evidence, and
+          it is not enough to recommend anything to anyone.
+        </p>
+        <p
+          className="text-sm leading-relaxed mb-3"
+          style={{ color: "rgba(241,231,211,0.8)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+        >
+          So I did the other work. I sat with naturopathy practitioners and asked what
+          they actually claim and what they don't. I read the systematic reviews,
+          including the ones concluding there is no demonstrated clinical effect. Then I
+          built this around what survived that reading, rather than around what I'd
+          personally felt.
+        </p>
+        <p
+          className="text-sm leading-relaxed"
+          style={{ color: "rgba(241,231,211,0.8)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+        >
+          The result is deliberately modest. Reflexology may bring some people
+          short-term relaxation and less anxiety. It may do nothing for you. It treats
+          no underlying condition. For most people it is low risk and costs nothing to
+          try — so if you want to try it, here is a careful way to do that.
+        </p>
+        <p
+          className="text-xs mt-4 pt-4"
+          style={{
+            borderTop: "1px solid rgba(241,231,211,0.12)",
+            color: "rgba(241,231,211,0.5)",
+            fontFamily: "'IBM Plex Mono', monospace",
+          }}
+        >
+          Balaji Veeramani · builder
+        </p>
+      </div>
+
+      {/* how it's built */}
+      <h3
+        className="text-sm uppercase tracking-wide mb-3"
+        style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}
+      >
+        How it's built
+      </h3>
+      <div className="space-y-3 mb-7">
+        {BUILD_PRINCIPLES.map((b, i) => (
+          <div
+            key={i}
+            className="rounded-2xl p-4"
+            style={{ background: "rgba(241,231,211,0.06)", border: "1px solid rgba(241,231,211,0.12)" }}
+          >
+            <p
+              className="text-sm font-medium mb-1.5"
+              style={{ color: "#F1E7D3", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              {b.head}
+            </p>
+            <p
+              className="text-xs leading-relaxed"
+              style={{ color: "rgba(241,231,211,0.65)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              {b.body}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* what this is not */}
+      <h3
+        className="text-sm uppercase tracking-wide mb-3"
+        style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}
+      >
+        What this is not
+      </h3>
+      <div className="rounded-2xl p-5 mb-7" style={{ background: "#F1E7D3" }}>
+        <ul className="space-y-2.5">
+          {[
+            "Not a diagnosis. The app cannot tell you what is causing your symptoms.",
+            "Not a treatment. It does not act on any underlying disease process.",
+            "Not a reason to delay care. If something is severe, sudden, worsening, or unlike your usual pattern, see a doctor — today, not after a session.",
+            "Not a replacement for prescribed medication. Never stop or change a prescription because a session helped.",
+            "Not risk-free for everyone. Diabetic neuropathy, blood clots, pregnancy, fractures, infections and open wounds all need medical advice first.",
+          ].map((t, i) => (
+            <li
+              key={i}
+              className="flex gap-2.5 text-xs leading-relaxed"
+              style={{ color: "#3A342A", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              <span style={{ color: "#C1583B" }}>·</span>
+              <span>{t}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* discretion */}
+      <div
+        className="rounded-2xl p-4 mb-4"
+        style={{ background: "rgba(193,88,59,0.15)", border: "1px solid rgba(193,88,59,0.3)" }}
+      >
+        <div className="flex gap-2 mb-2">
+          <AlertTriangle size={16} color="#E08A6B" className="flex-shrink-0 mt-0.5" />
+          <p
+            className="text-sm font-medium"
+            style={{ color: "#F1E7D3", fontFamily: "'IBM Plex Sans', sans-serif" }}
+          >
+            Use at your own discretion
+          </p>
+        </div>
+        <p
+          className="text-xs leading-relaxed"
+          style={{ color: "rgba(241,231,211,0.75)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+        >
+          Everything in Vayusole is educational content about a complementary practice.
+          It is not medical advice and no doctor–patient relationship is created by using
+          it. You decide whether to try a protocol, and you take responsibility for that
+          decision. If you have any medical condition, are pregnant, or take regular
+          medication, speak to a qualified healthcare professional before starting. Stop
+          immediately if anything hurts.
+        </p>
+      </div>
+
+      <p
+        className="text-[11px] text-center leading-relaxed"
+        style={{ color: "rgba(241,231,211,0.35)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+      >
+        In an emergency, contact your local emergency number or nearest hospital. Do not
+        use this app.
+      </p>
+    </div>
+  );
+}
+
+function ConsentGate({ onAccept, onCancel }) {
+  const [checked, setChecked] = useState(false);
+
+  return (
+    <div className="px-5 pt-10 pb-10">
+      <div
+        className="rounded-2xl p-6"
+        style={{ background: "rgba(241,231,211,0.06)", border: "1px solid rgba(241,231,211,0.18)" }}
+      >
+        <div className="flex gap-2 mb-4">
+          <AlertTriangle size={18} color="#E08A6B" className="flex-shrink-0 mt-0.5" />
+          <h2
+            className="text-xl leading-tight"
+            style={{ fontFamily: "'Fraunces', serif", color: "#F1E7D3", fontWeight: 600 }}
+          >
+            Before your first session
+          </h2>
+        </div>
+
+        <ul className="space-y-3 mb-5">
+          {[
+            "This is educational content about a complementary practice — not medical advice, diagnosis, or treatment.",
+            "The evidence is limited and mixed. Nothing here is graded above C. It may bring you short-term relaxation. It may do nothing.",
+            "It does not treat any underlying condition, and is never a reason to delay care or change a prescription.",
+            "Check with a healthcare professional first if you are pregnant, diabetic, have neuropathy, circulation problems, a recent injury, an infection, or any open wound on the foot.",
+            "Stop immediately if anything is painful. Pressure should feel firm, never sharp.",
+          ].map((t, i) => (
+            <li
+              key={i}
+              className="flex gap-2.5 text-xs leading-relaxed"
+              style={{ color: "rgba(241,231,211,0.75)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              <span style={{ color: "#C8763B" }}>·</span>
+              <span>{t}</span>
+            </li>
+          ))}
+        </ul>
+
+        <button
+          onClick={() => setChecked((c) => !c)}
+          className="flex items-start gap-3 w-full text-left mb-5"
+        >
+          <span
+            className="flex-shrink-0 w-5 h-5 rounded-md flex items-center justify-center mt-0.5"
+            style={{
+              background: checked ? "#C8763B" : "transparent",
+              border: `1.5px solid ${checked ? "#C8763B" : "rgba(241,231,211,0.35)"}`,
+              transition: "all .2s ease",
+            }}
+          >
+            {checked && (
+              <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+                <path d="M1 4.5L4 7.5L10 1.5" stroke="#10262B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </span>
+          <span
+            className="text-xs leading-relaxed"
+            style={{ color: "#F1E7D3", fontFamily: "'IBM Plex Sans', sans-serif" }}
+          >
+            I've read this, I'm choosing to try it at my own discretion, and I'll seek
+            medical care for anything severe or persistent.
+          </span>
+        </button>
+
+        <button
+          onClick={onAccept}
+          disabled={!checked}
+          className="w-full rounded-2xl py-4 text-sm font-medium transition-transform active:scale-95 mb-2"
+          style={{
+            background: checked ? "#C8763B" : "rgba(241,231,211,0.08)",
+            color: checked ? "#10262B" : "rgba(241,231,211,0.3)",
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            cursor: checked ? "pointer" : "not-allowed",
+          }}
+        >
+          Continue to session
+        </button>
+        <button
+          onClick={onCancel}
+          className="w-full rounded-2xl py-3 text-xs"
+          style={{ color: "rgba(241,231,211,0.5)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+        >
+          Not now
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function NavTabs({ tab, setTab }) {
   const tabs = [
     { id: "today", label: "Today" },
@@ -1507,6 +1777,7 @@ function NavTabs({ tab, setTab }) {
     { id: "progress", label: "Progress" },
     { id: "technique", label: "Technique" },
     { id: "evidence", label: "Evidence" },
+    { id: "about", label: "Why" },
     { id: "history", label: "Origins" },
   ];
   return (
@@ -1533,12 +1804,29 @@ export default function VayusoleApp() {
   const [selected, setSelected] = useState(null);
   const [tab, setTab] = useState("today");
   const [sessions, setSessions] = useState([]);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [pending, setPending] = useState(null);
+
+  // First protocol of the visit goes through the acknowledgement screen.
+  const openProtocol = (problem) => {
+    if (acknowledged) setSelected(problem);
+    else setPending(problem);
+  };
 
   return (
     <div className="min-h-screen" style={{ background: "#10262B" }}>
       <style>{FONT_IMPORT}</style>
       <div className="max-w-md mx-auto">
-        {selected ? (
+        {pending ? (
+          <ConsentGate
+            onAccept={() => {
+              setAcknowledged(true);
+              setSelected(pending);
+              setPending(null);
+            }}
+            onCancel={() => setPending(null)}
+          />
+        ) : selected ? (
           <ProtocolView
             problem={selected}
             onBack={() => setSelected(null)}
@@ -1552,11 +1840,12 @@ export default function VayusoleApp() {
         ) : (
           <>
             <NavTabs tab={tab} setTab={setTab} />
-            {tab === "today" && <ProblemPicker onSelect={setSelected} sessions={sessions} />}
-            {tab === "explore" && <ExploreView onSelect={setSelected} />}
+            {tab === "today" && <ProblemPicker onSelect={openProtocol} sessions={sessions} />}
+            {tab === "explore" && <ExploreView onSelect={openProtocol} />}
             {tab === "progress" && <ProgressView sessions={sessions} />}
             {tab === "technique" && <TechniquesView />}
             {tab === "evidence" && <EvidenceView />}
+            {tab === "about" && <AboutView />}
             {tab === "history" && <HistoryView />}
           </>
         )}
