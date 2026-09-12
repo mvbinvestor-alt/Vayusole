@@ -1,7 +1,19 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronLeft, Play, Pause, RotateCcw, AlertTriangle, Droplet, Clock } from "lucide-react";
+import {
+  ChevronLeft,
+  Play,
+  Pause,
+  RotateCcw,
+  AlertTriangle,
+  Droplet,
+  Clock,
+  Wind,
+  Hand,
+  Sparkles,
+  X,
+} from "lucide-react";
 
 /* ---------- Design tokens ----------
   ink:      #10262B  (deep spa teal, primary background)
@@ -264,6 +276,26 @@ const HISTORY = [
 ];
 
 function HistoryView() {
+  const [revealed, setRevealed] = useState(0);
+  const itemRefs = useRef([]);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const idx = Number(entry.target.dataset.idx);
+            // only ever moves forward, so the spine never rewinds
+            setRevealed((r) => Math.max(r, idx + 1));
+          }
+        });
+      },
+      { rootMargin: "0px 0px -25% 0px", threshold: 0.15 }
+    );
+    itemRefs.current.forEach((el) => el && obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <div className="px-5 pt-8 pb-10">
       <p
@@ -291,34 +323,65 @@ function HistoryView() {
       <div className="relative pl-6">
         <div
           className="absolute left-[7px] top-2 bottom-2 w-px"
-          style={{ background: "rgba(241,231,211,0.15)" }}
+          style={{ background: "rgba(241,231,211,0.12)" }}
         />
-        {HISTORY.map((h, i) => (
-          <div key={i} className="relative mb-7 last:mb-0">
+        {/* the spine fills as you scroll through the eras */}
+        <div
+          className="absolute left-[7px] top-2 w-px origin-top"
+          style={{
+            height: `${(revealed / HISTORY.length) * 100}%`,
+            background: "linear-gradient(#C8763B, rgba(200,118,59,0.3))",
+            transition: "height .8s cubic-bezier(.4,0,.2,1)",
+          }}
+        />
+        {HISTORY.map((h, i) => {
+          const isOn = i < revealed;
+          return (
             <div
-              className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full"
-              style={{ background: "#C8763B", border: "3px solid #10262B" }}
-            />
-            <p
-              className="text-xs mb-1"
-              style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}
+              key={i}
+              ref={(el) => (itemRefs.current[i] = el)}
+              data-idx={i}
+              className="relative mb-8 last:mb-0"
+              style={{
+                opacity: isOn ? 1 : 0.25,
+                transform: isOn ? "translateY(0)" : "translateY(14px)",
+                transition: "opacity .7s ease, transform .7s cubic-bezier(.4,0,.2,1)",
+              }}
             >
-              {h.era}
-            </p>
-            <h3
-              className="text-lg mb-1.5"
-              style={{ fontFamily: "'Fraunces', serif", color: "#F1E7D3", fontWeight: 600 }}
-            >
-              {h.title}
-            </h3>
-            <p
-              className="text-sm leading-relaxed"
-              style={{ color: "rgba(241,231,211,0.7)", fontFamily: "'IBM Plex Sans', sans-serif" }}
-            >
-              {h.text}
-            </p>
-          </div>
-        ))}
+              <div
+                className="absolute -left-6 top-1 rounded-full"
+                style={{
+                  width: isOn ? 14 : 10,
+                  height: isOn ? 14 : 10,
+                  marginLeft: isOn ? 0 : 2,
+                  marginTop: isOn ? 0 : 2,
+                  background: isOn ? "#C8763B" : "rgba(241,231,211,0.25)",
+                  border: "3px solid #10262B",
+                  boxShadow: isOn ? "0 0 0 4px rgba(200,118,59,0.15)" : "none",
+                  transition: "all .6s ease",
+                }}
+              />
+              <p
+                className="text-xs mb-1"
+                style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}
+              >
+                {h.era}
+              </p>
+              <h3
+                className="text-lg mb-1.5"
+                style={{ fontFamily: "'Fraunces', serif", color: "#F1E7D3", fontWeight: 600 }}
+              >
+                {h.title}
+              </h3>
+              <p
+                className="text-sm leading-relaxed"
+                style={{ color: "rgba(241,231,211,0.7)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+              >
+                {h.text}
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       <div
@@ -362,9 +425,29 @@ function GradeBadge({ grade }) {
   );
 }
 
-function FootMap({ activeIds }) {
+// Radius multiplier for the pressure-guide ring at each phase of the cycle.
+const PHASE_SCALE = { press: 1, hold: 0.92, release: 0.25, rest: 0 };
+const PHASE_LABEL = {
+  press: "Press in",
+  hold: "Hold steady",
+  release: "Release",
+  rest: "Paused",
+};
+
+function FootMap({
+  activeIds = [],
+  pulseId = null,
+  phase = "rest",
+  onPick = null,
+  intensity = null,
+  maxWidth = 220,
+}) {
   return (
-    <svg viewBox="0 0 300 520" className="w-full max-w-[220px] mx-auto">
+    <svg
+      viewBox="0 0 300 520"
+      className="w-full mx-auto"
+      style={{ maxWidth: `${maxWidth}px` }}
+    >
       {/* stylized sole outline */}
       <path
         d="M150 10
@@ -387,21 +470,71 @@ function FootMap({ activeIds }) {
       ))}
       {Object.entries(POINTS).map(([key, p]) => {
         const active = activeIds.includes(key);
+        const pulsing = pulseId === key;
+        const heat = intensity ? intensity[key] || 0 : 0;
+        const maxHeat = intensity ? Math.max(1, ...Object.values(intensity)) : 1;
+        const heatRatio = heat / maxHeat;
+
+        // Dot size: intensity mode scales with session count, otherwise active state.
+        const baseR = intensity ? 3.5 + heatRatio * 5.5 : active ? 7 : 4;
+        const dotFill = intensity
+          ? heat > 0
+            ? ZONES[p.zone]
+            : "rgba(241,231,211,0.18)"
+          : active
+          ? ZONES[p.zone]
+          : "rgba(241,231,211,0.3)";
+
         return (
-          <g key={key}>
-            {active && (
-              <circle cx={p.x} cy={p.y} r="14" fill={ZONES[p.zone]} opacity="0.25">
-                <animate attributeName="r" values="10;18;10" dur="2.2s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.35;0.08;0.35" dur="2.2s" repeatCount="indefinite" />
-              </circle>
+          <g key={key} onClick={onPick ? () => onPick(key) : undefined}>
+            {/* generous invisible hit area for touch */}
+            {onPick && (
+              <circle cx={p.x} cy={p.y} r="22" fill="transparent" style={{ cursor: "pointer" }} />
             )}
+
+            {/* pressure-guide ring — scales with the press/hold/release phase */}
+            {pulsing && (
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r="26"
+                fill={ZONES[p.zone]}
+                style={{
+                  opacity: phase === "release" ? 0.1 : 0.3,
+                  transform: `scale(${PHASE_SCALE[phase] ?? 0})`,
+                  transformOrigin: `${p.x}px ${p.y}px`,
+                  transition:
+                    phase === "press"
+                      ? "transform 2s cubic-bezier(.4,0,.2,1), opacity 2s ease"
+                      : "transform 2s ease-out, opacity 2s ease",
+                }}
+              />
+            )}
+
+            {/* soft halo on protocol points (not in explore/heat modes) */}
+            {active && !intensity && !pulsing && (
+              <circle cx={p.x} cy={p.y} r="13" fill={ZONES[p.zone]} opacity="0.18" />
+            )}
+
+            {/* glow behind worked points in constellation mode */}
+            {intensity && heat > 0 && (
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={10 + heatRatio * 12}
+                fill={ZONES[p.zone]}
+                opacity={0.08 + heatRatio * 0.22}
+              />
+            )}
+
             <circle
               cx={p.x}
               cy={p.y}
-              r={active ? 7 : 4}
-              fill={active ? ZONES[p.zone] : "rgba(241,231,211,0.3)"}
-              stroke={active ? "#F1E7D3" : "none"}
+              r={pulsing ? 8.5 : baseR}
+              fill={dotFill}
+              stroke={pulsing ? "#F1E7D3" : active && !intensity ? "#F1E7D3" : "none"}
               strokeWidth="1.5"
+              style={{ transition: "r .4s ease" }}
             />
           </g>
         );
@@ -427,7 +560,7 @@ function ProblemPicker({ onSelect, sessions }) {
             </p>
           </div>
           <p className="text-xs text-right max-w-[45%] leading-relaxed" style={{ color: "rgba(241,231,211,0.5)", fontFamily: "'IBM Plex Sans', sans-serif" }}>
-            Last: {sessions[sessions.length - 1]}
+            Last: {sessions[sessions.length - 1].label}
           </p>
         </div>
       )}
@@ -471,6 +604,7 @@ function ProblemPicker({ onSelect, sessions }) {
 function ProtocolView({ problem, onBack, onComplete }) {
   const [seconds, setSeconds] = useState(problem.duration);
   const [running, setRunning] = useState(false);
+  const [breathOn, setBreathOn] = useState(true);
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -484,7 +618,29 @@ function ProtocolView({ problem, onBack, onComplete }) {
 
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
-  const activeZones = [...new Set(problem.points.map((id) => POINTS[id].zone))];
+
+  // Everything below is derived from the timer — no second source of truth.
+  const elapsed = problem.duration - seconds;
+
+  // Pressure cycle: 2s press · 4s hold · 2s release, then advance to the next point.
+  const PRESSURE_CYCLE = 8;
+  const cyclePos = elapsed % PRESSURE_CYCLE;
+  const phase = !running
+    ? "rest"
+    : cyclePos < 2
+    ? "press"
+    : cyclePos < 6
+    ? "hold"
+    : "release";
+  const pulseId = running
+    ? problem.points[Math.floor(elapsed / PRESSURE_CYCLE) % problem.points.length]
+    : null;
+
+  // Breath cycle: 4s in · 2s hold · 4s out.
+  const BREATH_CYCLE = 10;
+  const bPos = elapsed % BREATH_CYCLE;
+  const breathPhase = bPos < 4 ? "in" : bPos < 6 ? "full" : "out";
+  const breathScale = breathPhase === "in" ? 1 : breathPhase === "full" ? 1 : 0.45;
 
   return (
     <div className="px-5 pt-6 pb-10">
@@ -506,7 +662,27 @@ function ProtocolView({ problem, onBack, onComplete }) {
         <GradeBadge grade={problem.grade} />
       </div>
 
-      <FootMap activeIds={problem.points} />
+      <FootMap activeIds={problem.points} pulseId={pulseId} phase={phase} />
+
+      {/* live pressure caption — follows the ring on the map */}
+      <div className="h-6 flex items-center justify-center mt-1">
+        {running && pulseId ? (
+          <p
+            className="text-xs flex items-center gap-2"
+            style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}
+          >
+            <Hand size={12} />
+            {PHASE_LABEL[phase]} · {POINTS[pulseId].name}
+          </p>
+        ) : (
+          <p
+            className="text-xs"
+            style={{ fontFamily: "'IBM Plex Sans', sans-serif", color: "rgba(241,231,211,0.35)" }}
+          >
+            Start the timer to follow the pressure rhythm
+          </p>
+        )}
+      </div>
 
       {/* legend */}
       <div className="flex flex-wrap gap-3 justify-center mt-3 mb-6">
@@ -551,6 +727,72 @@ function ProtocolView({ problem, onBack, onComplete }) {
             <RotateCcw size={16} />
           </button>
         </div>
+      </div>
+
+      {/* breath pacer */}
+      <div
+        className="rounded-2xl p-5 mb-5"
+        style={{ background: "rgba(78,139,120,0.12)", border: "1px solid rgba(78,139,120,0.3)" }}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <p
+            className="text-xs flex items-center gap-1.5"
+            style={{ color: "rgba(241,231,211,0.6)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+          >
+            <Wind size={12} /> Breath pacer
+          </p>
+          <button
+            onClick={() => setBreathOn((b) => !b)}
+            className="text-[10px] px-2.5 py-1 rounded-full"
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              background: breathOn ? "rgba(78,139,120,0.35)" : "rgba(241,231,211,0.08)",
+              color: breathOn ? "#F1E7D3" : "rgba(241,231,211,0.5)",
+            }}
+          >
+            {breathOn ? "ON" : "OFF"}
+          </button>
+        </div>
+
+        {breathOn && (
+          <div className="flex flex-col items-center pt-3 pb-1">
+            <div className="relative w-[120px] h-[120px] flex items-center justify-center">
+              <div
+                className="absolute rounded-full"
+                style={{
+                  width: 120,
+                  height: 120,
+                  border: "1px solid rgba(78,139,120,0.3)",
+                }}
+              />
+              <div
+                className="absolute rounded-full"
+                style={{
+                  width: 110,
+                  height: 110,
+                  background: "radial-gradient(circle, rgba(78,139,120,0.45), rgba(78,139,120,0.05))",
+                  transform: `scale(${running ? breathScale : 0.45})`,
+                  transition:
+                    breathPhase === "in"
+                      ? "transform 4s cubic-bezier(.37,0,.63,1)"
+                      : "transform 4s cubic-bezier(.37,0,.63,1)",
+                }}
+              />
+              <p
+                className="relative text-xs"
+                style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#F1E7D3" }}
+              >
+                {!running ? "ready" : breathPhase === "in" ? "in" : breathPhase === "full" ? "hold" : "out"}
+              </p>
+            </div>
+            <p
+              className="text-[11px] mt-2 text-center leading-relaxed"
+              style={{ color: "rgba(241,231,211,0.45)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              Four counts in, two held, four out. Let the pressure follow the breath.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* steps */}
@@ -600,7 +842,7 @@ function ProtocolView({ problem, onBack, onComplete }) {
 
       <button
         onClick={() => {
-          onComplete(problem.label);
+          onComplete(problem);
           onBack();
         }}
         className="w-full rounded-2xl py-4 mt-5 text-sm font-medium transition-transform active:scale-95"
@@ -924,9 +1166,345 @@ function EvidenceView() {
   );
 }
 
+// Which protocols call on a given point — built once from PROBLEMS.
+const POINT_USES = Object.keys(POINTS).reduce((acc, key) => {
+  acc[key] = PROBLEMS.filter((p) => p.points.includes(key));
+  return acc;
+}, {});
+
+const ZONE_LABEL = {
+  head: "Head & sinus",
+  chest: "Chest & lung",
+  digestive: "Digestive",
+  spine: "Spine & back",
+  pelvic: "Pelvic",
+  circulation: "Circulation",
+};
+
+function ExploreView({ onSelect }) {
+  const [picked, setPicked] = useState(null);
+  const p = picked ? POINTS[picked] : null;
+
+  return (
+    <div className="px-5 pt-8 pb-10">
+      <p
+        className="text-xs tracking-widest uppercase mb-1"
+        style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}
+      >
+        Explore
+      </p>
+      <h1
+        className="text-3xl mb-2 leading-tight"
+        style={{ fontFamily: "'Fraunces', serif", color: "#F1E7D3", fontWeight: 600 }}
+      >
+        The map, without a protocol
+      </h1>
+      <p
+        className="text-sm mb-6 leading-relaxed"
+        style={{ color: "rgba(241,231,211,0.6)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+      >
+        Tap any point to see what it's traditionally mapped to, which zone it sits in,
+        and which sessions use it.
+      </p>
+
+      <FootMap
+        activeIds={picked ? [picked] : []}
+        onPick={(key) => setPicked((cur) => (cur === key ? null : key))}
+        maxWidth={250}
+      />
+
+      {/* zone key */}
+      <div className="flex flex-wrap gap-2 justify-center mt-4">
+        {Object.entries(ZONE_LABEL).map(([z, label]) => (
+          <span
+            key={z}
+            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full"
+            style={{
+              background: "rgba(241,231,211,0.06)",
+              color: "rgba(241,231,211,0.65)",
+              fontFamily: "'IBM Plex Sans', sans-serif",
+            }}
+          >
+            <span className="w-2 h-2 rounded-full" style={{ background: ZONES[z] }} />
+            {label}
+          </span>
+        ))}
+      </div>
+
+      {/* detail card */}
+      <div className="mt-6">
+        {!p ? (
+          <div
+            className="rounded-2xl p-5 text-center"
+            style={{ background: "rgba(241,231,211,0.05)", border: "1px dashed rgba(241,231,211,0.18)" }}
+          >
+            <p
+              className="text-sm"
+              style={{ color: "rgba(241,231,211,0.45)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              Nothing selected — tap a point on the sole.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-2xl p-5" style={{ background: "#F1E7D3" }}>
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: ZONES[p.zone] }} />
+                  <span
+                    className="text-[11px]"
+                    style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#6B6255" }}
+                  >
+                    {p.code} · {ZONE_LABEL[p.zone]}
+                  </span>
+                </div>
+                <h3
+                  className="text-xl"
+                  style={{ fontFamily: "'Fraunces', serif", color: "#10262B", fontWeight: 600 }}
+                >
+                  {p.name}
+                </h3>
+              </div>
+              <button
+                onClick={() => setPicked(null)}
+                className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(16,38,43,0.08)", color: "#10262B" }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <p
+              className="text-xs mb-4 leading-relaxed"
+              style={{ color: "#3A342A", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              Traditional reflexology maps this spot to the {p.name.toLowerCase()} region.
+              The mapping comes from Ingham's charts, not from anatomy — there's no nerve
+              pathway connecting this part of the sole to that organ.
+            </p>
+
+            {POINT_USES[picked].length > 0 ? (
+              <>
+                <p
+                  className="text-[10px] uppercase tracking-wide mb-2"
+                  style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#8A7F6E" }}
+                >
+                  Used in
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {POINT_USES[picked].map((prob) => (
+                    <button
+                      key={prob.id}
+                      onClick={() => onSelect(prob)}
+                      className="text-xs px-3 py-1.5 rounded-full transition-transform active:scale-95"
+                      style={{
+                        background: "rgba(16,38,43,0.08)",
+                        color: "#10262B",
+                        fontFamily: "'IBM Plex Sans', sans-serif",
+                      }}
+                    >
+                      {prob.label} →
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p
+                className="text-xs"
+                style={{ color: "#6B6255", fontFamily: "'IBM Plex Sans', sans-serif" }}
+              >
+                No protocol in the app uses this point yet.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <p
+        className="text-[11px] text-center mt-6 leading-relaxed"
+        style={{ color: "rgba(241,231,211,0.35)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+      >
+        This chart is diagrammatic, not anatomical. Point positions are illustrative.
+      </p>
+    </div>
+  );
+}
+
+function ProgressView({ sessions }) {
+  // How many times each point has been worked across all sessions.
+  const intensity = sessions.reduce((acc, s) => {
+    s.points.forEach((id) => {
+      acc[id] = (acc[id] || 0) + 1;
+    });
+    return acc;
+  }, {});
+
+  const lit = Object.keys(intensity).length;
+  const total = Object.keys(POINTS).length;
+  const ranked = Object.entries(intensity).sort((a, b) => b[1] - a[1]);
+
+  return (
+    <div className="px-5 pt-8 pb-10">
+      <p
+        className="text-xs tracking-widest uppercase mb-1"
+        style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}
+      >
+        Progress
+      </p>
+      <h1
+        className="text-3xl mb-2 leading-tight"
+        style={{ fontFamily: "'Fraunces', serif", color: "#F1E7D3", fontWeight: 600 }}
+      >
+        Your constellation
+      </h1>
+      <p
+        className="text-sm mb-6 leading-relaxed"
+        style={{ color: "rgba(241,231,211,0.6)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+      >
+        Every completed session lights the points it worked. The more you return to a
+        point, the brighter it burns.
+      </p>
+
+      {sessions.length === 0 ? (
+        <div
+          className="rounded-2xl p-8 text-center"
+          style={{ background: "rgba(241,231,211,0.05)", border: "1px dashed rgba(241,231,211,0.18)" }}
+        >
+          <Sparkles size={20} color="rgba(241,231,211,0.35)" className="mx-auto mb-3" />
+          <p
+            className="text-sm leading-relaxed"
+            style={{ color: "rgba(241,231,211,0.45)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+          >
+            Nothing lit yet. Finish a session on the Today tab and the first points
+            will appear here.
+          </p>
+        </div>
+      ) : (
+        <>
+          <FootMap intensity={intensity} maxWidth={250} />
+
+          <div className="grid grid-cols-3 gap-3 mt-6 mb-6">
+            {[
+              { label: "Sessions", value: sessions.length },
+              { label: "Points lit", value: `${lit}/${total}` },
+              {
+                label: "Most worked",
+                value: ranked.length ? POINTS[ranked[0][0]].code : "—",
+              },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-2xl p-3 text-center"
+                style={{ background: "rgba(241,231,211,0.06)", border: "1px solid rgba(241,231,211,0.12)" }}
+              >
+                <p
+                  className="text-xl mb-1"
+                  style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#F1E7D3" }}
+                >
+                  {stat.value}
+                </p>
+                <p
+                  className="text-[10px] leading-tight"
+                  style={{ color: "rgba(241,231,211,0.5)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+                >
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <h3
+            className="text-sm uppercase tracking-wide mb-3"
+            style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}
+          >
+            Point log
+          </h3>
+          <div className="space-y-2 mb-6">
+            {ranked.map(([id, count]) => {
+              const maxCount = ranked[0][1];
+              return (
+                <div key={id} className="flex items-center gap-3">
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ background: ZONES[POINTS[id].zone] }}
+                  />
+                  <span
+                    className="text-xs flex-shrink-0 w-[110px] truncate"
+                    style={{ color: "#F1E7D3", fontFamily: "'IBM Plex Sans', sans-serif" }}
+                  >
+                    {POINTS[id].name}
+                  </span>
+                  <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(241,231,211,0.08)" }}>
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${(count / maxCount) * 100}%`,
+                        background: ZONES[POINTS[id].zone],
+                        transition: "width .6s ease",
+                      }}
+                    />
+                  </div>
+                  <span
+                    className="text-[11px] w-4 text-right"
+                    style={{ color: "rgba(241,231,211,0.5)", fontFamily: "'IBM Plex Mono', monospace" }}
+                  >
+                    {count}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <h3
+            className="text-sm uppercase tracking-wide mb-3"
+            style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}
+          >
+            Recent sessions
+          </h3>
+          <div className="space-y-2">
+            {[...sessions]
+              .reverse()
+              .slice(0, 8)
+              .map((s, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between rounded-xl px-4 py-3"
+                  style={{ background: "rgba(241,231,211,0.06)" }}
+                >
+                  <span
+                    className="text-sm"
+                    style={{ color: "#F1E7D3", fontFamily: "'IBM Plex Sans', sans-serif" }}
+                  >
+                    {s.label}
+                  </span>
+                  <span
+                    className="text-[11px]"
+                    style={{ color: "rgba(241,231,211,0.45)", fontFamily: "'IBM Plex Mono', monospace" }}
+                  >
+                    {new Date(s.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              ))}
+          </div>
+        </>
+      )}
+
+      <p
+        className="text-[11px] text-center mt-6 leading-relaxed"
+        style={{ color: "rgba(241,231,211,0.35)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+      >
+        Progress is held in memory for this visit only. Persisting it is what the
+        Supabase sessions table is for.
+      </p>
+    </div>
+  );
+}
+
 function NavTabs({ tab, setTab }) {
   const tabs = [
     { id: "today", label: "Today" },
+    { id: "explore", label: "Explore" },
+    { id: "progress", label: "Progress" },
     { id: "technique", label: "Technique" },
     { id: "evidence", label: "Evidence" },
     { id: "history", label: "Origins" },
@@ -964,12 +1542,19 @@ export default function VayusoleApp() {
           <ProtocolView
             problem={selected}
             onBack={() => setSelected(null)}
-            onComplete={(label) => setSessions((s) => [...s, label])}
+            onComplete={(p) =>
+              setSessions((s) => [
+                ...s,
+                { label: p.label, points: p.points, at: Date.now() },
+              ])
+            }
           />
         ) : (
           <>
             <NavTabs tab={tab} setTab={setTab} />
             {tab === "today" && <ProblemPicker onSelect={setSelected} sessions={sessions} />}
+            {tab === "explore" && <ExploreView onSelect={setSelected} />}
+            {tab === "progress" && <ProgressView sessions={sessions} />}
             {tab === "technique" && <TechniquesView />}
             {tab === "evidence" && <EvidenceView />}
             {tab === "history" && <HistoryView />}
