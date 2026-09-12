@@ -2,6 +2,14 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import {
+  authEnabled,
+  sendMagicLink,
+  getSession,
+  signOut,
+  deleteMyAccount,
+  supabase,
+} from "../lib/supabase";
+import {
   ChevronLeft,
   Play,
   Pause,
@@ -1966,7 +1974,7 @@ const BUILD_PRINCIPLES = [
   },
 ];
 
-function AboutView() {
+function AboutView({ session }) {
   return (
     <div className="px-5 pt-8 pb-10">
       <p
@@ -2108,26 +2116,64 @@ function AboutView() {
         Your data
       </h3>
       <div
-        className="rounded-2xl p-4 mb-7"
+        className="rounded-2xl p-4 mb-4"
         style={{ background: "rgba(78,139,120,0.12)", border: "1px solid rgba(78,139,120,0.3)" }}
       >
-        <p
-          className="text-sm font-medium mb-2"
-          style={{ color: "#F1E7D3", fontFamily: "'IBM Plex Sans', sans-serif" }}
-        >
-          We don't collect any.
-        </p>
-        <p
-          className="text-xs leading-relaxed"
-          style={{ color: "rgba(241,231,211,0.7)", fontFamily: "'IBM Plex Sans', sans-serif" }}
-        >
-          No account, no sign-up, no analytics, no advertising, no tracking
-          cookies. Which protocols you pick and what's bothering you never leaves
-          your device — your session history lives in the browser's memory while the
-          app is open and is gone when you close the tab. If that ever changes,
-          this panel changes with it, before the feature ships.
-        </p>
+        {session ? (
+          <>
+            <p
+              className="text-sm font-medium mb-2"
+              style={{ color: "#F1E7D3", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              Your email address. Nothing else.
+            </p>
+            <p
+              className="text-xs leading-relaxed mb-3"
+              style={{ color: "rgba(241,231,211,0.7)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              You're signed in as{" "}
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#F1E7D3" }}>
+                {session.user?.email}
+              </span>
+              . That address, and when you last signed in, is the whole of what
+              we hold — it exists so we know how many testers are actually using
+              the app during the beta.
+            </p>
+            <p
+              className="text-xs leading-relaxed"
+              style={{ color: "rgba(241,231,211,0.7)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              We do <strong style={{ color: "#F1E7D3" }}>not</strong> record which
+              protocols you run, what's bothering you, or when you run a session.
+              None of that leaves your device — it lives in the browser's memory
+              while the app is open and is gone when you close the tab. No
+              analytics, no advertising, no tracking cookies.
+            </p>
+          </>
+        ) : (
+          <>
+            <p
+              className="text-sm font-medium mb-2"
+              style={{ color: "#F1E7D3", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              We don't collect any.
+            </p>
+            <p
+              className="text-xs leading-relaxed"
+              style={{ color: "rgba(241,231,211,0.7)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              No account, no sign-up, no analytics, no advertising, no tracking
+              cookies. Which protocols you pick and what's bothering you never
+              leaves your device — your session history lives in the browser's
+              memory while the app is open and is gone when you close the tab. If
+              that ever changes, this panel changes with it, before the feature
+              ships.
+            </p>
+          </>
+        )}
       </div>
+
+      {session && <AccountControls email={session.user?.email} />}
 
       {/* discretion */}
       <div
@@ -2279,6 +2325,247 @@ function Footer() {
   );
 }
 
+function AccountControls() {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  const remove = async () => {
+    setBusy(true);
+    setFailed(false);
+    const res = await deleteMyAccount();
+    if (!res.ok) {
+      setBusy(false);
+      setFailed(true);
+    }
+    // On success the auth listener drops the session and the app returns to
+    // the sign-in screen on its own.
+  };
+
+  return (
+    <div className="mb-7">
+      {!confirming ? (
+        <div className="flex gap-2">
+          <button
+            onClick={() => signOut()}
+            className="flex-1 rounded-2xl py-3 text-xs transition-transform active:scale-95"
+            style={{
+              background: "rgba(241,231,211,0.08)",
+              border: "1px solid rgba(241,231,211,0.15)",
+              color: "rgba(241,231,211,0.75)",
+              fontFamily: "'IBM Plex Sans', sans-serif",
+            }}
+          >
+            Sign out
+          </button>
+          <button
+            onClick={() => setConfirming(true)}
+            className="flex-1 rounded-2xl py-3 text-xs transition-transform active:scale-95"
+            style={{
+              background: "rgba(193,88,59,0.12)",
+              border: "1px solid rgba(193,88,59,0.3)",
+              color: "#E08A6B",
+              fontFamily: "'IBM Plex Sans', sans-serif",
+            }}
+          >
+            Delete my account
+          </button>
+        </div>
+      ) : (
+        <div
+          className="rounded-2xl p-4"
+          style={{ background: "rgba(193,88,59,0.12)", border: "1px solid rgba(193,88,59,0.3)" }}
+        >
+          <p
+            className="text-xs leading-relaxed mb-3"
+            style={{ color: "rgba(241,231,211,0.8)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+          >
+            This erases your email address from our records immediately and
+            permanently. There's nothing else attached to it. You'd need a fresh
+            invitation to get back in.
+          </p>
+          {failed && (
+            <p
+              className="text-xs mb-3"
+              style={{ color: "#E08A6B", fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              That didn't go through. Try again, or email and it'll be done by hand.
+            </p>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setConfirming(false)}
+              disabled={busy}
+              className="flex-1 rounded-xl py-3 text-xs"
+              style={{
+                background: "rgba(241,231,211,0.08)",
+                color: "rgba(241,231,211,0.75)",
+                fontFamily: "'IBM Plex Sans', sans-serif",
+              }}
+            >
+              Keep it
+            </button>
+            <button
+              onClick={remove}
+              disabled={busy}
+              className="flex-1 rounded-xl py-3 text-xs font-medium"
+              style={{
+                background: "#C1583B",
+                color: "#F1E7D3",
+                fontFamily: "'IBM Plex Sans', sans-serif",
+              }}
+            >
+              {busy ? "Deleting…" : "Delete permanently"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SignInView({ onSkip }) {
+  const [email, setEmail] = useState("");
+  const [state, setState] = useState("idle"); // idle | sending | sent | error
+  const [message, setMessage] = useState("");
+
+  const submit = async () => {
+    if (!email.trim() || state === "sending") return;
+    setState("sending");
+    const res = await sendMagicLink(email);
+    if (res.ok) {
+      setState("sent");
+    } else {
+      setMessage(res.error);
+      setState("error");
+    }
+  };
+
+  if (state === "sent") {
+    return (
+      <div className="px-5 pt-16 pb-10">
+        <p
+          className="text-xs tracking-widest uppercase mb-2"
+          style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}
+        >
+          Check your inbox
+        </p>
+        <h1
+          className="text-3xl mb-3 leading-tight"
+          style={{ fontFamily: "'Fraunces', serif", color: "#F1E7D3", fontWeight: 600 }}
+        >
+          Link sent
+        </h1>
+        <p
+          className="text-sm leading-relaxed mb-6"
+          style={{ color: "rgba(241,231,211,0.65)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+        >
+          Open the link on this device and you'll land straight in the app. It
+          expires in an hour. If nothing arrives, check spam.
+        </p>
+        <button
+          onClick={() => {
+            setState("idle");
+            setEmail("");
+          }}
+          className="text-xs"
+          style={{ color: "rgba(241,231,211,0.5)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+        >
+          Use a different address
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-5 pt-12 pb-10">
+      <p
+        className="text-xs tracking-widest uppercase mb-2"
+        style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#C8763B" }}
+      >
+        Vayusole · closed beta
+      </p>
+      <h1
+        className="text-3xl mb-3 leading-tight"
+        style={{ fontFamily: "'Fraunces', serif", color: "#F1E7D3", fontWeight: 600 }}
+      >
+        Sign in to test
+      </h1>
+      <p
+        className="text-sm mb-6 leading-relaxed"
+        style={{ color: "rgba(241,231,211,0.65)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+      >
+        Enter the address your invitation went to. We'll email a link — no
+        password to remember.
+      </p>
+
+      <input
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        autoCapitalize="none"
+        spellCheck={false}
+        value={email}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          if (state === "error") setState("idle");
+        }}
+        onKeyDown={(e) => e.key === "Enter" && submit()}
+        placeholder="you@example.com"
+        className="w-full rounded-2xl px-4 py-4 mb-3 outline-none"
+        style={{
+          background: "rgba(241,231,211,0.08)",
+          border: `1px solid ${state === "error" ? "rgba(193,88,59,0.7)" : "rgba(241,231,211,0.2)"}`,
+          color: "#F1E7D3",
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: 16,
+          transition: "border-color .2s ease",
+        }}
+      />
+
+      {state === "error" && (
+        <p
+          className="text-xs mb-3"
+          style={{ color: "#E08A6B", fontFamily: "'IBM Plex Sans', sans-serif" }}
+        >
+          {message}
+        </p>
+      )}
+
+      <button
+        onClick={submit}
+        disabled={!email.trim() || state === "sending"}
+        className="w-full rounded-2xl py-4 text-sm font-medium transition-transform active:scale-95 mb-5"
+        style={{
+          background: email.trim() ? "#C8763B" : "rgba(241,231,211,0.08)",
+          color: email.trim() ? "#10262B" : "rgba(241,231,211,0.3)",
+          fontFamily: "'IBM Plex Sans', sans-serif",
+          cursor: email.trim() ? "pointer" : "not-allowed",
+        }}
+      >
+        {state === "sending" ? "Sending…" : "Email me a link"}
+      </button>
+
+      <div
+        className="rounded-2xl p-4"
+        style={{ background: "rgba(78,139,120,0.12)", border: "1px solid rgba(78,139,120,0.3)" }}
+      >
+        <p
+          className="text-xs leading-relaxed"
+          style={{ color: "rgba(241,231,211,0.7)", fontFamily: "'IBM Plex Sans', sans-serif" }}
+        >
+          <strong style={{ color: "#F1E7D3" }}>What we store: your email address.
+          That's it.</strong>{" "}
+          We don't record which protocols you run or what's bothering you — none
+          of that leaves your device. Sign-in exists so we know how many testers
+          are actually using the app. You can delete your account yourself, any
+          time, from the Why tab.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function NavTabs({ tab, setTab }) {
   const tabs = [
     { id: "today", label: "Today" },
@@ -2316,50 +2603,84 @@ export default function VayusoleApp() {
   const [acknowledged, setAcknowledged] = useState(false);
   const [pending, setPending] = useState(null);
 
+  // Auth state. When Supabase isn't configured, authEnabled is false and the
+  // app behaves exactly as it did before — open and anonymous.
+  const [session, setSession] = useState(null);
+  const [authChecked, setAuthChecked] = useState(!authEnabled);
+
+  useEffect(() => {
+    if (!authEnabled) return;
+    let active = true;
+
+    getSession().then((s) => {
+      if (!active) return;
+      setSession(s);
+      setAuthChecked(true);
+    });
+
+    const { data } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (active) setSession(s);
+    });
+    return () => {
+      active = false;
+      data?.subscription?.unsubscribe();
+    };
+  }, []);
+
   // First protocol of the visit goes through the acknowledgement screen.
   const openProtocol = (problem) => {
     if (acknowledged) setSelected(problem);
     else setPending(problem);
   };
 
-  return (
+  const shell = (children) => (
     <div className="min-h-screen" style={{ background: "#10262B" }}>
       <style>{FONT_IMPORT}</style>
-      <div className="max-w-md mx-auto">
-        {pending ? (
-          <ConsentGate
-            onAccept={() => {
-              setAcknowledged(true);
-              setSelected(pending);
-              setPending(null);
-            }}
-            onCancel={() => setPending(null)}
-          />
-        ) : selected ? (
-          <ProtocolView
-            problem={selected}
-            onBack={() => setSelected(null)}
-            onComplete={(p) =>
-              setSessions((s) => [
-                ...s,
-                { label: p.label, points: p.points, at: Date.now() },
-              ])
-            }
-          />
-        ) : (
-          <>
-            <NavTabs tab={tab} setTab={setTab} />
-            {tab === "today" && <ProblemPicker onSelect={openProtocol} sessions={sessions} />}
-            {tab === "explore" && <ExploreView onSelect={openProtocol} />}
-            {tab === "progress" && <ProgressView sessions={sessions} />}
-            {tab === "technique" && <TechniquesView />}
-            {tab === "evidence" && <EvidenceView />}
-            {tab === "about" && <AboutView />}
-            {tab === "history" && <HistoryView />}
-          </>
-        )}
-        <Footer />
-      </div>
+      <div className="max-w-md mx-auto">{children}</div>
     </div>
+  );
+
+  // Brief blank while we check for an existing session — avoids flashing the
+  // sign-in screen at someone who is already signed in.
+  if (!authChecked) return shell(null);
+
+  if (authEnabled && !session) return shell(<SignInView />);
+
+  return shell(
+    <>
+      {pending ? (
+        <ConsentGate
+          onAccept={() => {
+            setAcknowledged(true);
+            setSelected(pending);
+            setPending(null);
+          }}
+          onCancel={() => setPending(null)}
+        />
+      ) : selected ? (
+        <ProtocolView
+          problem={selected}
+          onBack={() => setSelected(null)}
+          onComplete={(p) =>
+            setSessions((s) => [
+              ...s,
+              { label: p.label, points: p.points, at: Date.now() },
+            ])
+          }
+        />
+      ) : (
+        <>
+          <NavTabs tab={tab} setTab={setTab} />
+          {tab === "today" && <ProblemPicker onSelect={openProtocol} sessions={sessions} />}
+          {tab === "explore" && <ExploreView onSelect={openProtocol} />}
+          {tab === "progress" && <ProgressView sessions={sessions} />}
+          {tab === "technique" && <TechniquesView />}
+          {tab === "evidence" && <EvidenceView />}
+          {tab === "about" && <AboutView session={session} />}
+          {tab === "history" && <HistoryView />}
+        </>
+      )}
+      <Footer />
+    </>
   );
 }

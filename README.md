@@ -87,6 +87,60 @@ to gets in too — for a small closed beta that is usually a fair trade.
 The cookie is HMAC-signed, httpOnly, secure, and expires after 30 days.
 Forged, expired, and label-swapped cookies are all rejected.
 
+## Tester sign-in (magic link)
+
+Email-based sign-in so you know **who** is using the app. Deliberately does not
+record **what** they do with it.
+
+**Setup:**
+
+1. Create a project at supabase.com
+2. Authentication → Providers → Email: enable, and turn **off** "Confirm email"
+   only if you want fewer steps (magic links verify the address anyway)
+3. Authentication → URL Configuration → Site URL: `https://vayusole.vercel.app`
+4. Add each tester by hand: Authentication → Users → Add user → send invite.
+   `shouldCreateUser: false` in the client means an uninvited address gets no
+   account and no email — there is no self-serve sign-up.
+5. Add these to Vercel → Settings → Environment Variables, then redeploy:
+
+| Variable | Where from | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API | |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API | Safe in the browser |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API | **Server only.** Never prefix with `NEXT_PUBLIC_`. |
+
+**Turning it off:** clear the two `NEXT_PUBLIC_SUPABASE_*` vars and redeploy.
+`authEnabled` goes false and the app is open and anonymous again.
+
+**Seeing who's using it:** Supabase → Authentication → Users shows every
+tester's address, sign-up date, and last sign-in. That is the entire dataset.
+
+### What is and isn't stored
+
+**Stored:** email address, account created, last sign-in — all in Supabase's
+own `auth.users` table.
+
+**Not stored:** which protocols anyone runs, what's bothering them, session
+timestamps, anything from the Progress tab. That data never leaves the device;
+it lives in browser memory and dies with the tab.
+
+This split is deliberate. An email address is ordinary personal data. An email
+joined to a symptom history is health data about an identifiable person, which
+under India's DPDP Act brings consent, purpose limitation, retention and
+breach-notification duties. For a ten-person beta the second gains you almost
+nothing and costs a great deal.
+
+If protocol logging is ever added it must be explicit opt-in, after the
+clinical review, **with the in-app privacy panel and the privacy policy updated
+first.** The Why tab's "Your data" panel switches text depending on whether the
+user is signed in, so it stays true in both states — keep it that way.
+
+### Account deletion
+
+Testers can delete themselves from the Why tab: it calls `DELETE /api/account`,
+which verifies their token and removes the user. One tap, no email to you.
+Requires `SUPABASE_SERVICE_ROLE_KEY` to be set, otherwise the route returns 501.
+
 ## Audio
 
 All sound is synthesised in the browser with the Web Audio API. There are no
