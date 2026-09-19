@@ -458,26 +458,53 @@ function FootMap({
       className="w-full mx-auto"
       style={{ maxWidth: `${maxWidth}px` }}
     >
-      {/* stylized sole outline */}
+      {/* Sole. Proportions follow a real foot — separated toes, medial arch,
+          metatarsal and heel pads. The point POSITIONS are still the
+          traditional chart's and remain unverified; the Explore tab says so. */}
+
+      {/* body of the sole, drawn first so the toes sit on top */}
       <path
-        d="M150 10
-           C 100 10 85 55 90 100
-           C 94 140 70 160 65 210
-           C 60 270 55 320 60 370
-           C 65 430 90 480 130 500
-           C 150 510 165 508 185 495
-           C 225 470 240 420 235 360
-           C 232 320 245 260 240 210
-           C 236 160 210 140 210 100
-           C 212 55 200 10 150 10 Z"
+        d="M84 96
+           C76 120, 74 140, 78 160
+           C80 200, 78 250, 80 300
+           C76 330, 74 360, 76 395
+           C82 440, 110 486, 152 491
+           C196 487, 222 448, 226 400
+           C230 360, 226 320, 228 280
+           C232 240, 240 200, 242 160
+           C244 130, 240 110, 232 100
+           C205 32, 118 38, 84 96 Z"
         fill="#1A3A40"
         stroke="rgba(241,231,211,0.35)"
         strokeWidth="1.5"
       />
-      {/* toe separators, decorative */}
-      {[110, 130, 150, 170, 190].map((x, i) => (
-        <line key={i} x1={x} y1="8" x2={x} y2="42" stroke="rgba(241,231,211,0.15)" strokeWidth="2" />
-      ))}
+
+      {/* toes, big toe medial */}
+      <ellipse cx="112" cy="48" rx="26" ry="32" fill="#1A3A40" stroke="rgba(241,231,211,0.35)" strokeWidth="1.5" />
+      <ellipse cx="157" cy="34" rx="16" ry="21" fill="#1A3A40" stroke="rgba(241,231,211,0.35)" strokeWidth="1.5" />
+      <ellipse cx="185" cy="36" rx="14.5" ry="19" fill="#1A3A40" stroke="rgba(241,231,211,0.35)" strokeWidth="1.5" />
+      <ellipse cx="209" cy="44" rx="13" ry="17" fill="#1A3A40" stroke="rgba(241,231,211,0.35)" strokeWidth="1.5" />
+      <ellipse cx="230" cy="58" rx="11.5" ry="15" fill="#1A3A40" stroke="rgba(241,231,211,0.35)" strokeWidth="1.5" />
+
+      {/* metatarsal pad */}
+      <path
+        d="M88 104 C120 94, 205 94, 236 106
+           C238 132, 224 150, 186 154
+           C140 158, 98 144, 86 126 Z"
+        fill="rgba(241,231,211,0.06)"
+      />
+
+      {/* heel pad */}
+      <ellipse cx="153" cy="415" rx="63" ry="57" fill="rgba(241,231,211,0.06)" />
+
+      {/* medial arch line */}
+      <path
+        d="M92 200 C104 250, 106 300, 96 350"
+        fill="none"
+        stroke="rgba(241,231,211,0.14)"
+        strokeWidth="1.5"
+      />
+
       {Object.entries(POINTS).map(([key, p]) => {
         const active = activeIds.includes(key);
         const pulsing = pulseId === key;
