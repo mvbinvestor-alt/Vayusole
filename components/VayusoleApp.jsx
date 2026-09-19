@@ -57,13 +57,13 @@ const POINTS = {
   pituitary: { name: "Pituitary", code: "RF-04", x: 150, y: 78, zone: "head" },
   lung: { name: "Lung / Chest", code: "RF-05", x: 175, y: 165, zone: "chest" },
   heart: { name: "Heart", code: "RF-06", x: 185, y: 155, zone: "chest" },
-  spine: { name: "Spine", code: "RF-07", x: 90, y: 260, zone: "spine" },
-  lowerBack: { name: "Lower Back", code: "RF-08", x: 90, y: 330, zone: "spine" },
+  spine: { name: "Spine", code: "RF-07", x: 112, y: 262, zone: "spine" },
+  lowerBack: { name: "Lower Back", code: "RF-08", x: 110, y: 332, zone: "spine" },
   kidney: { name: "Kidney", code: "RF-09", x: 140, y: 230, zone: "digestive" },
   intestine: { name: "Intestines", code: "RF-10", x: 145, y: 300, zone: "digestive" },
-  sciatic: { name: "Sciatic Nerve", code: "RF-11", x: 110, y: 400, zone: "spine" },
-  pelvic: { name: "Pelvic / Uterus", code: "RF-12", x: 200, y: 420, zone: "pelvic" },
-  lymphatic: { name: "Lymphatic", code: "RF-13", x: 90, y: 110, zone: "circulation" },
+  sciatic: { name: "Sciatic Nerve", code: "RF-11", x: 112, y: 400, zone: "spine" },
+  pelvic: { name: "Pelvic / Uterus", code: "RF-12", x: 198, y: 418, zone: "pelvic" },
+  lymphatic: { name: "Lymphatic", code: "RF-13", x: 90, y: 112, zone: "circulation" },
   diaphragm: { name: "Diaphragm", code: "RF-14", x: 150, y: 175, zone: "digestive" },
 };
 
@@ -458,52 +458,78 @@ function FootMap({
       className="w-full mx-auto"
       style={{ maxWidth: `${maxWidth}px` }}
     >
-      {/* Sole. Proportions follow a real foot — separated toes, medial arch,
-          metatarsal and heel pads. The point POSITIONS are still the
-          traditional chart's and remain unverified; the Explore tab says so. */}
+      {/* Sole, drawn from real proportions: wide ball, pronounced medial
+          arch cut, narrower heel, graduated toes. Shading is layered flat
+          fills — no gradients — so it stays crisp at any size.
 
-      {/* body of the sole, drawn first so the toes sit on top */}
+          NOTE: the realistic arch moved the medial border inward, so the
+          spine and lower-back points had to move with it (x 90 -> 110-112).
+          That is a change to the traditional chart and is flagged in the
+          clinical review packet for sign-off. */}
+
+      {/* body */}
       <path
-        d="M84 96
-           C76 120, 74 140, 78 160
-           C80 200, 78 250, 80 300
-           C76 330, 74 360, 76 395
-           C82 440, 110 486, 152 491
-           C196 487, 222 448, 226 400
-           C230 360, 226 320, 228 280
-           C232 240, 240 200, 242 160
-           C244 130, 240 110, 232 100
-           C205 32, 118 38, 84 96 Z"
+        d="M78 100 C70 120, 68 140, 72 158 C82 200, 96 245, 100 290
+           C100 330, 94 360, 96 395 C100 445, 124 484, 156 486
+           C190 484, 212 450, 214 405 C216 365, 212 330, 216 295
+           C222 250, 236 205, 240 165 C244 135, 240 108, 232 98
+           C200 28, 116 38, 78 100 Z"
         fill="#1A3A40"
-        stroke="rgba(241,231,211,0.35)"
+        stroke="rgba(241,231,211,0.32)"
         strokeWidth="1.5"
       />
 
-      {/* toes, big toe medial */}
-      <ellipse cx="112" cy="48" rx="26" ry="32" fill="#1A3A40" stroke="rgba(241,231,211,0.35)" strokeWidth="1.5" />
-      <ellipse cx="157" cy="34" rx="16" ry="21" fill="#1A3A40" stroke="rgba(241,231,211,0.35)" strokeWidth="1.5" />
-      <ellipse cx="185" cy="36" rx="14.5" ry="19" fill="#1A3A40" stroke="rgba(241,231,211,0.35)" strokeWidth="1.5" />
-      <ellipse cx="209" cy="44" rx="13" ry="17" fill="#1A3A40" stroke="rgba(241,231,211,0.35)" strokeWidth="1.5" />
-      <ellipse cx="230" cy="58" rx="11.5" ry="15" fill="#1A3A40" stroke="rgba(241,231,211,0.35)" strokeWidth="1.5" />
-
-      {/* metatarsal pad */}
+      {/* medial arch, recessed */}
       <path
-        d="M88 104 C120 94, 205 94, 236 106
-           C238 132, 224 150, 186 154
-           C140 158, 98 144, 86 126 Z"
-        fill="rgba(241,231,211,0.06)"
+        d="M76 150 C88 196, 104 244, 108 296 C112 344, 104 382, 100 400
+           C94 360, 92 300, 86 250 C82 206, 76 174, 76 150 Z"
+        fill="rgba(0,0,0,0.22)"
+      />
+
+      {/* metatarsal pad across the ball */}
+      <path
+        d="M76 106 C112 78, 200 74, 236 102
+           C238 132, 220 156, 176 160 C126 164, 84 142, 74 120 Z"
+        fill="rgba(241,231,211,0.07)"
+      />
+
+      {/* individual ball pads */}
+      <ellipse cx="102" cy="122" rx="24" ry="19" fill="rgba(241,231,211,0.05)" />
+      <ellipse cx="150" cy="112" rx="19" ry="15" fill="rgba(241,231,211,0.04)" />
+      <ellipse cx="186" cy="114" rx="17" ry="14" fill="rgba(241,231,211,0.04)" />
+      <ellipse cx="216" cy="124" rx="15" ry="12" fill="rgba(241,231,211,0.04)" />
+
+      {/* crease under the ball */}
+      <path
+        d="M80 148 C118 168, 196 168, 234 146"
+        fill="none"
+        stroke="rgba(0,0,0,0.25)"
+        strokeWidth="2"
       />
 
       {/* heel pad */}
-      <ellipse cx="153" cy="415" rx="63" ry="57" fill="rgba(241,231,211,0.06)" />
-
-      {/* medial arch line */}
+      <ellipse cx="156" cy="418" rx="58" ry="54" fill="rgba(241,231,211,0.07)" />
+      <ellipse cx="156" cy="422" rx="36" ry="33" fill="rgba(241,231,211,0.04)" />
       <path
-        d="M92 200 C104 250, 106 300, 96 350"
+        d="M112 372 C138 360, 180 361, 206 371"
         fill="none"
-        stroke="rgba(241,231,211,0.14)"
+        stroke="rgba(0,0,0,0.18)"
         strokeWidth="1.5"
       />
+
+      {/* toes, graduated, big toe medial */}
+      <ellipse cx="105" cy="52" rx="27" ry="33" fill="#1A3A40" stroke="rgba(241,231,211,0.32)" strokeWidth="1.5" />
+      <ellipse cx="152" cy="36" rx="16.5" ry="22" fill="#1A3A40" stroke="rgba(241,231,211,0.32)" strokeWidth="1.5" />
+      <ellipse cx="182" cy="38" rx="15" ry="20" fill="#1A3A40" stroke="rgba(241,231,211,0.32)" strokeWidth="1.5" />
+      <ellipse cx="207" cy="46" rx="13.5" ry="18" fill="#1A3A40" stroke="rgba(241,231,211,0.32)" strokeWidth="1.5" />
+      <ellipse cx="229" cy="62" rx="12" ry="15.5" fill="#1A3A40" stroke="rgba(241,231,211,0.32)" strokeWidth="1.5" />
+
+      {/* toe pads */}
+      <ellipse cx="105" cy="64" rx="17" ry="16" fill="rgba(241,231,211,0.06)" />
+      <ellipse cx="152" cy="45" rx="10" ry="10" fill="rgba(241,231,211,0.05)" />
+      <ellipse cx="182" cy="47" rx="9" ry="9" fill="rgba(241,231,211,0.05)" />
+      <ellipse cx="207" cy="54" rx="8" ry="8" fill="rgba(241,231,211,0.05)" />
+      <ellipse cx="229" cy="69" rx="7" ry="7" fill="rgba(241,231,211,0.05)" />
 
       {Object.entries(POINTS).map(([key, p]) => {
         const active = activeIds.includes(key);

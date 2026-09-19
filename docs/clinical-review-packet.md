@@ -89,6 +89,31 @@ Currently listed:
 
 ---
 
+
+## Section 2b — Point positions changed by the anatomical chart
+
+The foot illustration was redrawn to real proportions at Dr. Mohan's
+suggestion. A realistic medial arch curves further inward than the old
+schematic outline did, so three points had to move to stay on the foot.
+**These are changes to the traditional chart and need explicit sign-off.**
+
+| Point | Was | Now | Reason |
+|---|---|---|---|
+| RF-07 Spine | x 90, y 260 | x 112, y 262 | Old position fell outside the arch once drawn to real proportions |
+| RF-08 Lower Back | x 90, y 330 | x 110, y 332 | Same |
+| RF-11 Sciatic | x 110, y 400 | x 112, y 400 | Minor, keeps clearance from the heel edge |
+| RF-12 Pelvic | x 200, y 420 | x 198, y 418 | Minor, keeps clearance from the lateral edge |
+| RF-13 Lymphatic | x 90, y 110 | x 90, y 112 | Minor |
+
+- [ ] Do the spine and lower-back reflexes belong on the **medial border**
+      of the arch, as now drawn, or further into the arch itself?
+- [ ] Are the remaining 9 positions correct against the chart you work from?
+- [ ] Should any point be removed as too imprecise to show at all?
+
+**All other point positions are unchanged and remain unverified.** The app
+still tells users the chart is diagrammatic rather than anatomical, and that
+line stays until this section is signed.
+
 ## Section 3 — Home remedies
 
 These sit alongside the protocols. Each is graded C or D.
